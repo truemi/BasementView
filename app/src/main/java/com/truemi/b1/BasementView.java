@@ -25,10 +25,11 @@ public class BasementView extends LinearLayout {
     private   boolean        b1Show;
     private   double         v11;
     private boolean moving  = false;
-    private float   damping = 0.5f;//阻尼系数
+    private float   damping = 0.4f;//阻尼系数
     private boolean isAbsorb;
     private boolean isTop;
-    private  int duration =400;//滚动时间
+    private int duration = 400;//滚动时间
+    private boolean autoToB1;
 
     public BasementView(Context context) {
         this(context, null);
@@ -67,6 +68,7 @@ public class BasementView extends LinearLayout {
 
     /**
      * 触摸事件处理
+     *
      * @param ev
      * @return
      */
@@ -80,12 +82,12 @@ public class BasementView extends LinearLayout {
             case MotionEvent.ACTION_MOVE:
                 float v = ev.getY() - y;
                 if (!b1Show) {
-                    if (isTop&&v>0) {
+                    if (isTop && v > 0) {
                         isAbsorb = true;
                     } else {
                         isAbsorb = false;
                     }
-                }else{
+                } else {
                     isAbsorb = true;
                 }
                 break;
@@ -111,15 +113,15 @@ public class BasementView extends LinearLayout {
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
-                v11 = Math.ceil((double) (event.getY() - y)) * damping;
+                v11 = (event.getY() - y) * damping;
 
                 if (!b1Show && layoutParams.topMargin < 0 && v11 > 0) {
-                        layoutParams.setMargins(0, (int) v11 - height, 0, 0);
-                        basementLayout.setLayoutParams(layoutParams);
+                    layoutParams.setMargins(0, (int) v11 - height, 0, 0);
+                    basementLayout.setLayoutParams(layoutParams);
 
                 } else if (b1Show && v11 < 0) {
-                        layoutParams.setMargins(0, (int) v11, 0, 0);
-                        basementLayout.setLayoutParams(layoutParams);
+                    layoutParams.setMargins(0, (int) Math.ceil(v11), 0, 0);
+                    basementLayout.setLayoutParams(layoutParams);
 
                 }
                 break;
@@ -151,8 +153,9 @@ public class BasementView extends LinearLayout {
 
     /**
      * 通过滚动器让view动起来
-     * @param startY 相对开始位置(相对于view当前位置)
-     * @param endY    相对结束位置
+     *
+     * @param startY   相对开始位置(相对于view当前位置)
+     * @param endY     相对结束位置
      * @param duration 滚动时间
      */
     public void scrollView(int startY, int endY, int duration) {
@@ -176,27 +179,33 @@ public class BasementView extends LinearLayout {
         if (scroller.computeScrollOffset()) {
             int currY = scroller.getCurrY();
             if (v11 > 0) {
-                if (Math.abs(currY)+3>=Math.abs(scroller.getFinalY())) {
-                    if (currY>-10){
+                if (Math.abs(currY) + 20 >= Math.abs(scroller.getFinalY())) {
+                    if (currY > -20) {
                         layoutParams.setMargins(0, (int) 0, 0, 0);
-                    }else{
-                        layoutParams.setMargins(0, (int) - height, 0, 0);
+                    } else {
+                        layoutParams.setMargins(0, (int) -height, 0, 0);
                     }
-                }else {
+                } else {
                     layoutParams.setMargins(0, (int) (currY - Math.abs(v11 - height)), 0, 0);
                 }
             } else if (v11 < 0) {
-                if (Math.abs(currY)+3>=Math.abs(scroller.getFinalY())) {
-                    if (currY>-10){
+                if (Math.abs(currY) + 20 >= Math.abs(scroller.getFinalY())) {
+                    if (currY > -20) {
                         layoutParams.setMargins(0, (int) 0, 0, 0);
-                    }else{
-                        layoutParams.setMargins(0, (int) - height, 0, 0);
+                    } else {
+                        layoutParams.setMargins(0, (int) -height, 0, 0);
                     }
-                }else {
+                } else {
                     layoutParams.setMargins(0, (int) (currY + v11), 0, 0);
                 }
-            }else{
+            } else {
+                if (autoToB1 && currY+20>height) {
+                    layoutParams.setMargins(0, 0, 0, 0);
+                } else if (currY-10<0){
+                    layoutParams.setMargins(0,  - height, 0, 0);
+                }else {
                     layoutParams.setMargins(0, currY - height, 0, 0);
+                }
             }
             basementLayout.setLayoutParams(layoutParams);
         }
@@ -206,6 +215,7 @@ public class BasementView extends LinearLayout {
 
     /**
      * 获取负一楼View
+     *
      * @return
      */
     public View getBasementLayout() {
@@ -214,6 +224,7 @@ public class BasementView extends LinearLayout {
 
     /**
      * 获取主界面view
+     *
      * @return
      */
     public View getCurrentLayout() {
@@ -222,6 +233,7 @@ public class BasementView extends LinearLayout {
 
     /**
      * 设置负一楼view内容
+     *
      * @param view
      */
     public void setBasementLayout(View view) {
@@ -230,6 +242,7 @@ public class BasementView extends LinearLayout {
 
     /**
      * 设置主界面view内容
+     *
      * @param view
      */
     public void setCurrentLayout(View view) {
@@ -239,43 +252,49 @@ public class BasementView extends LinearLayout {
     /**
      * 滚动到负一楼
      */
-    public void toB1(){
-        v11  =0;
-        if (!b1Show){
-            scrollView(0,  height, duration);
+    public void toB1() {
+        v11 = 0;
+        if (!b1Show) {
+            autoToB1 = true;
+            scrollView(0, height, duration);
         }
     }
+
     /**
      * 滚动到主界面
      */
-    public void toF1(){
-        v11  =0;
-        if (b1Show){
-            scrollView(height,-height, duration);
+    public void toF1() {
+        v11 = 0;
+        if (b1Show) {
+            autoToB1 = false;
+            scrollView(height, -height, duration);
         }
     }
 
     /**
      * 设置滚动时间,单位为ms
+     *
      * @param duration
      */
-    public void  setDuration(int duration){
-        this.duration =duration;
+    public void setDuration(int duration) {
+        this.duration = duration;
     }
 
     /**
      * 是否打开负一楼
+     *
      * @return
      */
-    public boolean  isOpenB1(){
-      return b1Show;
+    public boolean isOpenB1() {
+        return b1Show;
     }
 
     /**
      * 绑定滚动控件
+     *
      * @param scrollView
      */
-    public void  bindScrollAbleView(View scrollView){
+    public void bindScrollAbleView(View scrollView) {
         try {
             if (scrollView instanceof AbsListView) {
                 final AbsListView absListView = (AbsListView) scrollView;
@@ -287,14 +306,14 @@ public class BasementView extends LinearLayout {
 
                     @Override
                     public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                        isTop = firstVisibleItem == 0?true:false;
+                        isTop = firstVisibleItem == 0 ? true : false;
                     }
                 });
 
             }
-            }catch (Exception e){
-            if (ViewCompat.canScrollVertically(scrollView, 1)||ViewCompat.canScrollVertically(scrollView, -1)){
-                isTop = ViewCompat.canScrollVertically(scrollView, 1)?false:true;
+        } catch (Exception e) {
+            if (ViewCompat.canScrollVertically(scrollView, 1) || ViewCompat.canScrollVertically(scrollView, -1)) {
+                isTop = ViewCompat.canScrollVertically(scrollView, 1) ? false : true;
             }
         }
     }
